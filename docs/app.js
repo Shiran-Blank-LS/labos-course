@@ -176,12 +176,6 @@ function chatApp() {
     showSettings: false,
     apiKeyInput: '',
     selectedModel: sessionStorage.getItem(MODEL_STORAGE) || 'gemini-2.5-flash-lite',
-    availableModels: [
-      { id: 'gemini-2.5-flash-lite', label: '2.5 Flash Lite (מומלץ)' },
-      { id: 'gemini-2.5-flash', label: '2.5 Flash' },
-      { id: 'gemini-2.0-flash-lite', label: '2.0 Flash Lite' },
-      { id: 'gemini-1.5-flash', label: '1.5 Flash' },
-    ],
     suggestions: [
       'Explain quantum computing simply',
       'Write a Python fibonacci function',
@@ -311,7 +305,12 @@ function chatApp() {
         this.loadConversations();
         this.$nextTick(() => this.scrollToBottom());
       } catch (err) {
-        this.error = err.message;
+        if (err.message === 'Failed to fetch') {
+          this.error =
+            'שגיאת רשת/CORS. ב-Google AI Studio הגדירי HTTP referrer: https://shiran-blank-ls.github.io/*';
+        } else {
+          this.error = err.message;
+        }
       } finally {
         this.loading = false;
         this.$nextTick(() => this.$refs.input?.focus());
@@ -344,3 +343,5 @@ function chatApp() {
     },
   };
 }
+
+window.chatApp = chatApp;

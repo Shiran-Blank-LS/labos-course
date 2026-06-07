@@ -11,8 +11,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script defer src="app.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
   </head>
   <body>
     <div class="app" x-data="chatApp()" x-init="init()">
@@ -169,9 +169,10 @@
           </template>
           <label class="field-label">Model</label>
           <select class="field-input" x-model="selectedModel">
-            <template x-for="m in availableModels" :key="m.id">
-              <option :value="m.id" x-text="m.label"></option>
-            </template>
+            <option value="gemini-2.5-flash-lite">2.5 Flash Lite (מומלץ)</option>
+            <option value="gemini-2.5-flash">2.5 Flash</option>
+            <option value="gemini-2.0-flash-lite">2.0 Flash Lite</option>
+            <option value="gemini-1.5-flash">1.5 Flash</option>
           </select>
           <p class="field-hint">Flash Lite מומלץ ל-Free Tier — פחות שגיאות מכסה</p>
           <div class="modal-actions">
