@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gemini Chat</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+    <script defer src="app.js"></script>
+  </head>
+  <body>
+    <div class="app" x-data="chatApp()" x-init="init()">
+      <div
+        class="sidebar-overlay"
+        :class="{ visible: sidebarOpen }"
+        @click="sidebarOpen = false"
+      ></div>
+
+      <aside class="sidebar" :class="{ open: sidebarOpen }">
+        <div class="sidebar-header">
+          <div class="logo">
+            <div class="logo-icon">✦</div>
+            <span>Gemini Chat</span>
+          </div>
+          <button class="btn-new" @click="newChat()">
+            <span>＋</span> New conversation
+          </button>
+        </div>
+
+        <div class="conversation-list">
+          <template x-if="conversations.length === 0">
+            <p style="padding: 16px; color: var(--text-muted); font-size: 0.8125rem; text-align: center">
+              No conversations yet
+            </p>
+          </template>
+
+          <template x-for="conv in conversations" :key="conv.id">
+            <div
+              class="conversation-item"
+              :class="{ active: currentConversationId === conv.id }"
+              @click="selectConversation(conv.id)"
+            >
+              <div class="conv-text">
+                <div class="conv-title" x-text="conv.title"></div>
+                <div class="conv-date" x-text="formatDate(conv.updated_at)"></div>
+              </div>
+              <button
+                class="btn-delete"
+                @click.stop="deleteConversation(conv.id)"
+                title="Delete"
+              >
+                ✕
+              </button>
+            </div>
+          </template>
+        </div>
+
+        <div class="sidebar-footer">Powered by Google Gemini · GitHub Pages</div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="btn-toggle" @click="sidebarOpen = !sidebarOpen">☰</button>
+          <span class="topbar-title" x-text="currentTitle"></span>
+          <button
+            class="btn-settings"
+            @click="showSettings = true"
+            :class="{ configured: hasApiKey }"
+            title="API Key Settings"
+          >
+            ⚙
+          </button>
+          <span class="topbar-badge" x-text="selectedModel"></span>
+        </header>
+
+        <div class="messages-area" x-ref="messagesArea">
+          <template x-if="messages.length === 0 && !loading">
+            <div class="empty-state">
+              <div class="empty-icon">✦</div>
+              <h2>What's on your mind?</h2>
+              <p>
+                Ask anything — conversations are saved in your browser (localStorage).
+                Enter your Gemini API key in settings to start.
+              </p>
+              <div class="suggestions">
+                <template x-for="s in suggestions" :key="s">
+                  <button class="suggestion-chip" @click="useSuggestion(s)" x-text="s"></button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <template x-for="msg in messages" :key="msg.id">
+            <div class="message" :class="msg.role">
+              <div class="msg-avatar" x-text="msg.role === 'user' ? 'You' : '✦'"></div>
+              <div class="msg-body">
+                <div class="msg-bubble" x-text="msg.content"></div>
+                <div class="msg-time" x-text="formatTime(msg.created_at)"></div>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="loading">
+            <div class="typing-indicator">
+              <div class="msg-avatar">✦</div>
+              <div class="typing-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <div class="input-area">
+          <div class="input-wrapper">
+            <textarea
+              x-ref="input"
+              x-model="input"
+              placeholder="Message Gemini..."
+              rows="1"
+              @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()"
+              @input="autoResize($event.target)"
+              :disabled="loading"
+            ></textarea>
+            <button
+              class="btn-send"
+              @click="sendMessage()"
+              :disabled="loading || !input.trim()"
+              title="Send"
+            >
+              ↑
+            </button>
+          </div>
+          <p class="input-hint">Enter to send · Shift+Enter for new line</p>
+        </div>
+      </main>
+
+      <template x-if="error">
+        <div class="toast" x-text="error" @click="error = ''"></div>
+      </template>
+
+      <div class="modal-overlay" x-show="showSettings" x-cloak @click.self="showSettings = false">
+        <div class="modal">
+          <div class="modal-header">
+            <h3>🔑 Gemini API Key</h3>
+            <button class="modal-close" @click="showSettings = false">✕</button>
+          </div>
+          <p class="modal-desc">
+            המפתח נשמר רק בדפדפן שלך (sessionStorage) — לא בקבצי הפרויקט.
+          </p>
+          <label class="field-label">API Key</label>
+          <input
+            type="password"
+            class="field-input"
+            x-model="apiKeyInput"
+            placeholder="AIza..."
+            @keydown.enter="saveApiKey()"
+          />
+          <p class="field-hint">
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">קבלי מפתח ב-Google AI Studio →</a>
+          </p>
+          <template x-if="hasApiKey">
+            <p class="key-status">✓ מפתח מוגדר (<span x-text="maskedApiKey"></span>)</p>
+          </template>
+          <label class="field-label">Model</label>
+          <select class="field-input" x-model="selectedModel">
+            <template x-for="m in availableModels" :key="m.id">
+              <option :value="m.id" x-text="m.label"></option>
+            </template>
+          </select>
+          <p class="field-hint">Flash Lite מומלץ ל-Free Tier — פחות שגיאות מכסה</p>
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="clearApiKey()" x-show="hasApiKey">מחק מפתח</button>
+            <button class="btn-primary" @click="saveApiKey()">שמור</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

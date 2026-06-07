@@ -1,0 +1,14 @@
+
+# Playwright
+node_modules/
+.gitconfig-local
+
+# Chatbot
+chatbot/.env
+chatbot/chatbot.db
+chatbot/chatbot.db-*
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
